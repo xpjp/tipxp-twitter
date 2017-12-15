@@ -30,6 +30,7 @@ class XP_RPC():
             balance = self.connection.getbalance(name)
         else:
             address = self.connection.getaccountaddress(name)
+            balance = self.connection.getbalance(name)
         print(balance)
         return balance
 
