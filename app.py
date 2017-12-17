@@ -5,9 +5,6 @@ from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 import settings
 import json
 
-auth = OAuth1(settings.CONSUMER_KEY, settings.CONSUMER_SECRET,
-              settings.ACCESS_TOKEN, settings.ACCESS_TOKEN_SECRET)
-
 
 class XP_RPC():
 
@@ -47,13 +44,18 @@ class XP_RPC():
             req = "Error"
         return req
 
+    def send_from(slef, name, address, amount):
+        pass
+
 
 class Twitter():
 
     def __init__(self):
         self.xpd = XP_RPC()
-        self.auth = OAuth1(settings.CONSUMER_KEY, settings.CONSUMER_SECRET,
-                           settings.ACCESS_TOKEN, settings.ACCESS_TOKEN_SECRET)
+        self.auth_stream = OAuth1(settings.CONSUMER_KEY_STREAM, settings.CONSUMER_SECRET_STREAM,
+                           settings.ACCESS_TOKEN_STREAM, settings.ACCESS_TOKEN_SECRET_STREAM)
+        self.auth_reply = OAuth1(settings.CONSUMER_KEY_REPLY, settings.CONSUMER_SECRET_REPLY,
+                           settings.ACCESS_TOKEN_REPLY, settings.ACCESS_TOKEN_SECRET_REPLY)
 
     def reply(self, text, reply_token):
         params = {
@@ -62,7 +64,7 @@ class Twitter():
             "auto_populate_reply_metadata": "true"
         }
         req = requests.post(
-            "https://api.twitter.com/1.1/statuses/update.json", auth=self.auth, data=params)
+            "https://api.twitter.com/1.1/statuses/update.json", auth=self.auth_reply, data=params)
         return req
 
     def detect(self, tweet):
@@ -82,7 +84,7 @@ class Twitter():
                     if balance >= amount:
                         if self.xpd.move_balance(address_name, to_name, amount):
                             text = """
-                            XPちゃんより%sさんにお届けものだよっ！ %fXP\n『@￰tip_XPchan balance』で受取と残高確認が行えるよ！
+                            XPちゃんより%sさんにお届けものだよっ！ %fXP\n『@￰tip_XPchan balance』で残高確認が行えるよ！
                             """ % (m[2], amount)
                             req = self.reply(text, tweet["id"])
                     else:
@@ -91,6 +93,22 @@ class Twitter():
                 else:
                     print("エラーだよっ！よく確認してね！")
 
+            elif command == "donate":
+                print("donate in")
+                amount = m[2]
+                to_name = "tipxpchan-940589020509192193"
+                balance = self.xpd.show_balance(address_name)
+                amount = float(amount)
+                if balance >= amount:
+                    if self.xpd.move_balance(address_name, to_name, amount):
+                        text = """
+                        @%s 開発へのご支援ありがとうございます！
+                        """ % tweet["user"]["name"]
+                        req = self.reply(text, tweet["id"])
+                else:
+                    text = "残高が足りないよ〜 所持XP:%f" % balance
+                    req = self.reply(text, tweet["id"])
+
             elif command == "deposit":
                 print("deposit in")
                 text = "%sさんのアドレスは「%s」だよっ！" % (
@@ -98,22 +116,12 @@ class Twitter():
                 req = self.reply(text, tweet["id"])
 
             elif command == "withdraw":
+                print("withdraw in")
                 pass
 
             elif command == "withdrawall":
                 print("withdrawall in")
-                if m[2][0] == "@":
-                    to_name = "tipxpchan-" + self.get_id(m[2][1:])
-                    balance = self.xpd.show_balance(address_name)
-                    if balance >= float(amount):
-                        self.xpd.move_balance(address_name, to_name, amount)
-                    else:
-                        text = "残高が足りないよ〜 所持XP:%f" % balance
-                        req = self.reply(text, tweet["id"])
-
-                else:
-                    text = "エラーだよっ！よく確認してね！"
-                    req = self.reply(text, tweet["id"])
+                pass
 
             elif command == "balance":
                 print("balance in")
@@ -123,8 +131,8 @@ class Twitter():
 
             else:
                 print("command error")
-                text = "エラーだよっ！よく確認してね！"
-                req = self.reply(text, tweet["id"])
+                # text = "エラーだよっ！よく確認してね！"
+                # req = self.reply(text, tweet["id"])
 
         else:
             pass
@@ -133,7 +141,7 @@ class Twitter():
         params = {
             "screen_name": name,
         }
-        user_id = requests.get("https://api.twitter.com/1.1/users/show.json", auth=self.auth, params=params).json()["id_str"]
+        user_id = requests.get("https://api.twitter.com/1.1/users/show.json", auth=self.auth_reply, params=params).json()["id_str"]
         return user_id
 
 
@@ -141,7 +149,7 @@ def main():
     url = "https://stream.twitter.com/1.1/statuses/filter.json"
     twitter = Twitter()
     # print(twitter.detect(tweet))
-    _stream = requests.post(url, auth=twitter.auth, stream=True, data={"track":"@tip_XPchan"})
+    _stream = requests.post(url, auth=twitter.auth_stream, stream=True, data={"track":"@tip_XPchan"})
     for _line in _stream.iter_lines():
         try:
             _doc = json.loads(_line.decode("utf-8"))
