@@ -72,6 +72,7 @@ class Twitter():
         m = tweet["text"].split(" ")
         if m[0] == "@tip_XPchan":
             command = m[1]
+            lang = tweet["user"]["lang"]
             address_name = "tipxpchan-" + tweet["user"]["id_str"]
 
             if command == "tip":
@@ -83,12 +84,16 @@ class Twitter():
                     amount = float(amount)
                     if balance >= amount:
                         if self.xpd.move_balance(address_name, to_name, amount):
-                            text = """
-                            XPちゃんより%sさんにお届けものだよっ！ %fXP\n『@￰tip_XPchan balance』で残高確認が行えるよ！
-                            """ % (m[2], amount)
+                            if lang == "ja":
+                                text = "XPちゃんより%sさんにお届けものだよっ！ %fXP\n『@￰tip_XPchan balance』で残高確認が行えるよ！" % (m[2], amount)
+                            else:
+                                text = "Present for %s! Sent %fXP!"
                             req = self.reply(text, tweet["id"])
                     else:
-                        text = "残高が足りないよ〜 所持XP:%f" % balance
+                        if lang == "ja":
+                            text = "残高が足りないよ〜 所持XP:%f" % balance
+                        else:
+                            text = "Not enough balance! XP:%f" % balance
                         req = self.reply(text, tweet["id"])
                 else:
                     print("エラーだよっ！よく確認してね！")
@@ -101,18 +106,26 @@ class Twitter():
                 amount = float(amount)
                 if balance >= amount:
                     if self.xpd.move_balance(address_name, to_name, amount):
-                        text = """
-                        @%s 開発へのご支援ありがとうございます！
-                        """ % tweet["user"]["name"]
+                        if lang == "ja":
+                            text = "@%s 開発へのご支援ありがとうございます！" % tweet["user"]["name"]
+                        else:
+                            text = "@%s Thank you for donation！" % tweet["user"]["name"]
                         req = self.reply(text, tweet["id"])
                 else:
-                    text = "残高が足りないよ〜 所持XP:%f" % balance
+                    if lang == "ja":
+                        text = "残高が足りないよ〜 所持XP:%f" % balance
+                    else:
+                        text = "Not enough balance! XP:%f" % balance
                     req = self.reply(text, tweet["id"])
 
             elif command == "deposit":
                 print("deposit in")
-                text = "%sさんのアドレスは「%s」だよっ！" % (
-                    tweet["user"]["name"], self.xpd.get_address(address_name))
+                if lang == "ja":
+                    text = "%sさんのアドレスは「%s」だよっ！" % (
+                        tweet["user"]["name"], self.xpd.get_address(address_name))
+                else:
+                    text = "%s 's address is 「%s」！" % (
+                        tweet["user"]["name"], self.xpd.get_address(address_name))
                 req = self.reply(text, tweet["id"])
 
             elif command == "withdraw":
@@ -125,8 +138,12 @@ class Twitter():
 
             elif command == "balance":
                 print("balance in")
-                text = "%sさんの保有XPは%fXPだよん！" % (
-                    tweet["user"]["name"], self.xpd.show_balance(address_name))
+                if lang == "ja":
+                    text = "%sさんの保有XPは%fXPだよん！" % (
+                        tweet["user"]["name"], self.xpd.show_balance(address_name))
+                else:
+                    text = "%s 's balance is %fXP！" % (
+                        tweet["user"]["name"], self.xpd.show_balance(address_name))
                 req = self.reply(text, tweet["id"])
 
             else:
