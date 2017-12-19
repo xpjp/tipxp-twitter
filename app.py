@@ -54,7 +54,7 @@ class XP_RPC():
             fee = tx["fee"]
         else:
             fee = 0
-        self.move_balance(name, "taxpot", fee + self.tax)
+        self.move_balance(name, "taxpot", float(fee) + self.tax)
         return txid
 
     def validateaddress(self, address):
