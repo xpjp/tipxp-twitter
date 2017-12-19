@@ -4,6 +4,9 @@ from requests_oauthlib import OAuth1
 from bitcoinrpc.authproxy import AuthServiceProxy, JSONRPCException
 import settings
 import json
+import threading
+import time
+import traceback
 
 
 class XP_RPC():
@@ -56,6 +59,7 @@ class Twitter():
                            settings.ACCESS_TOKEN_STREAM, settings.ACCESS_TOKEN_SECRET_STREAM)
         self.auth_reply = OAuth1(settings.CONSUMER_KEY_REPLY, settings.CONSUMER_SECRET_REPLY,
                            settings.ACCESS_TOKEN_REPLY, settings.ACCESS_TOKEN_SECRET_REPLY)
+        self.tweets = []
 
     def reply(self, text, reply_token):
         params = {
@@ -89,6 +93,7 @@ class Twitter():
                             else:
                                 text = "Present for %s! Sent %fXP!"
                             req = self.reply(text, tweet["id"])
+
                     else:
                         if lang == "ja":
                             text = "残高が足りないよ〜 所持XP:%f" % balance
@@ -162,20 +167,38 @@ class Twitter():
         return user_id
 
 
-def main():
+def collect():
     url = "https://stream.twitter.com/1.1/statuses/filter.json"
-    twitter = Twitter()
+    # twitter = Twitter()
     # print(twitter.detect(tweet))
     _stream = requests.post(url, auth=twitter.auth_stream, stream=True, data={"track":"@tip_XPchan"})
     for _line in _stream.iter_lines():
         try:
             _doc = json.loads(_line.decode("utf-8"))
-            print(_doc)
-            print(twitter.detect(_doc))
+            if _doc:
+                twitter.tweets.append(_doc)
+            else:
+                pass
         except:
             print("エラー")
             pass
 
+def job():
+    while True:
+        try:
+            twitter.detect(twitter.tweets.pop(0))
+            # print(twitter.tweets)
+            time.sleep(5)
+        except:
+            time.sleep(1)
+            print(traceback.format_exc())
+            continue
+
 
 if __name__ == '__main__':
-    main()
+    twitter = Twitter()
+    thread_1 = threading.Thread(target=collect)
+    thread_2 = threading.Thread(target=job)
+
+    thread_1.start()
+    thread_2.start()
