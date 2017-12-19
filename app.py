@@ -152,7 +152,7 @@ class Twitter():
                 address = m[2]
                 if balance >= amount + self.xpd.tax:
                     if self.xpd.validateaddress(address):
-                        txid = self.connection.sendfrom(
+                        txid = self.xpd.sendfrom(
                             address_name, address, amount)
                         if lang == "ja":
                             text = """
@@ -184,7 +184,7 @@ class Twitter():
                 amount = balance - self.xpd.tax
                 address = m[2]
                 if self.xpd.validateaddress(address):
-                    txid = self.connection.sendfrom(
+                    txid = self.xpd.sendfrom(
                         address_name, address, amount)
                     if lang == "ja":
                         text = """
