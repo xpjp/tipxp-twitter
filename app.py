@@ -181,7 +181,7 @@ class Twitter():
             elif command == "withdrawall":
                 print("withdrawall in")
                 balance = self.xpd.show_balance(address_name)
-                amount = balance - self.xpd.tax
+                amount = float(balance) - self.xpd.tax
                 address = m[2]
                 if self.xpd.validateaddress(address):
                     txid = self.xpd.send_from(
