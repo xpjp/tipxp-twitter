@@ -1,6 +1,11 @@
 # tipxp-twitter
 Twitter用XPチップBot
 
+# 目次(TOC)
+- [Usage](#使い方)
+- [コマンド一覧](#コマンド一覧)
+- [CommandList](#commandlist)
+
 ## 使い方
 settings.pyを作成し、必要な情報を書き込む
 ```
@@ -17,7 +22,7 @@ rpc_password = ""
 
 - tip
 ```
-@tip_XPchan tip @[アカウント] [数量]
+@tip_XPchan tip @[ユーザー名] [数量]
 ```
 指定したTwitterアカウントあてにXPを送る
 
@@ -39,14 +44,52 @@ Twitterアカウントに紐づいたアドレスを表示する
 ```
 開発者に支援XPを送る
 
-- withdraw(未実装)
+- withdraw
 ```
 @tip_XPchan withdraw [アドレス] [数量]
 ```
 XPアドレスに数量分のXPを送金する
 
-- withdrawall(未実装)
+- withdrawall
 ```
 @tip_XPchan withdrawall [アドレス]
 ```
 XPアドレスに全額XPを送金する
+
+## CommandList
+
+- tip
+```
+@tip_XPchan tip @[UserName] [Amount]
+```
+Send XP to TwitterUser
+
+- balance
+```
+@tip_XPchan balance
+```
+Show Balance
+
+- deposit
+```
+@tip_XPchan deposit
+```
+Show Address
+
+- donate
+```
+@tip_XPchan donate [Amount]
+```
+Donate for developers
+
+- withdraw
+```
+@tip_XPchan withdraw [Address] [Amount]
+```
+Send an amount of XP to address
+
+- withdrawall
+```
+@tip_XPchan withdrawall [Address]
+```
+Send your full amount XP to address
