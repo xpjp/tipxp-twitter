@@ -5,6 +5,7 @@ import settings
 import json
 import threading
 import time
+import mysql.connector
 # import traceback
 
 
@@ -70,6 +71,8 @@ class Twitter():
         self.auth_reply = OAuth1(settings.CONSUMER_KEY_REPLY, settings.CONSUMER_SECRET_REPLY,
                                  settings.ACCESS_TOKEN_REPLY, settings.ACCESS_TOKEN_SECRET_REPLY)
         self.tweets = []
+        self.conn = mysql.connector.connect(user=settings.dbuser, password=settings.dbpass, host=settings.dbhost, database=settings.dbname)
+        self.cur = self.conn.cursor()
 
     def reply(self, text, reply_token):
         params = {
@@ -103,6 +106,7 @@ class Twitter():
                                     m[2], amount)
                             else:
                                 text = "Present for %s! Sent %fXP!"
+                            self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %f)", (tweet["user"]["screen_name"], m[2][1:], amount))
                             req = self.reply(text, tweet["id"])
 
                     else:
