@@ -109,6 +109,7 @@ class Twitter():
                             try:
                                 self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (tweet["user"]["screen_name"], m[2][1:], amount))
                                 self.conn.commit()
+                                req = self.reply(text, tweet["id"])
                             except:
                                 print(traceback.format_exc())
                                 req = self.reply(text, tweet["id"])
