@@ -106,7 +106,8 @@ class Twitter():
                                     m[2], amount)
                             else:
                                 text = "Present for %s! Sent %fXP!"
-                            self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %f)", (tweet["user"]["screen_name"], m[2][1:], amount))
+                            self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (tweet["user"]["screen_name"], m[2][1:], amount))
+                            self.conn.commit()
                             req = self.reply(text, tweet["id"])
 
                     else:
@@ -256,7 +257,7 @@ def job():
         try:
             twitter.detect(twitter.tweets.pop(0))
             # print(twitter.tweets)
-            time.sleep(5)
+            time.sleep(10)
         except:
             time.sleep(1)
             # print(traceback.format_exc())
