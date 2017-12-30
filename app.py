@@ -86,7 +86,7 @@ class Twitter():
 
     def detect(self, tweet):
         print("Detecting...")
-        m = tweet["text"].split(" ")
+        m = tweet["text"].split()
         if m[0] == "@tip_XPchan":
             command = m[1]
             lang = tweet["user"]["lang"]
@@ -109,6 +109,7 @@ class Twitter():
                             try:
                                 self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (tweet["user"]["screen_name"], m[2][1:], amount))
                                 self.conn.commit()
+                                req = self.reply(text, tweet["id"])
                             except:
                                 print(traceback.format_exc())
                                 req = self.reply(text, tweet["id"])
