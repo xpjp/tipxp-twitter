@@ -86,7 +86,7 @@ class Twitter():
 
     def detect(self, tweet):
         print("Detecting...")
-        m = tweet["text"].split(" ")
+        m = tweet["text"].split()
         if m[0] == "@tip_XPchan":
             command = m[1]
             lang = tweet["user"]["lang"]
