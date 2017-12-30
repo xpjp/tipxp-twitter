@@ -6,7 +6,7 @@ import json
 import threading
 import time
 import mysql.connector
-# import traceback
+import traceback
 
 
 class XP_RPC():
@@ -106,9 +106,12 @@ class Twitter():
                                     m[2], amount)
                             else:
                                 text = "Present for %s! Sent %fXP!"
-                            self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (tweet["user"]["screen_name"], m[2][1:], amount))
-                            self.conn.commit()
-                            req = self.reply(text, tweet["id"])
+                            try:
+                                self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (tweet["user"]["screen_name"], m[2][1:], amount))
+                                self.conn.commit()
+                            except:
+                                print(traceback.format_exc())
+                                req = self.reply(text, tweet["id"])
 
                     else:
                         if lang == "ja":
