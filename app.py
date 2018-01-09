@@ -71,7 +71,8 @@ class Twitter():
         self.auth_reply = OAuth1(settings.CONSUMER_KEY_REPLY, settings.CONSUMER_SECRET_REPLY,
                                  settings.ACCESS_TOKEN_REPLY, settings.ACCESS_TOKEN_SECRET_REPLY)
         self.tweets = []
-        self.conn = mysql.connector.connect(user=settings.dbuser, password=settings.dbpass, host=settings.dbhost, database=settings.dbname)
+        self.conn = mysql.connector.connect(
+            user=settings.dbuser, password=settings.dbpass, host=settings.dbhost, database=settings.dbname)
         self.cur = self.conn.cursor()
 
     def reply(self, text, reply_token):
@@ -105,9 +106,11 @@ class Twitter():
                                 text = "XPちゃんより%sさんにお届けものだよっ！ %fXP\n『@￰tip_XPchan balance』で残高確認が行えるよ！" % (
                                     m[2], amount)
                             else:
-                                text = "Present for %s! Sent %fXP!"
+                                text = "Present for %s! Sent %fXP!" % (
+                                    m[2], amount)
                             try:
-                                self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (tweet["user"]["screen_name"], m[2][1:], amount))
+                                self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (
+                                    tweet["user"]["screen_name"], m[2][1:], amount))
                                 self.conn.commit()
                                 req = self.reply(text, tweet["id"])
                             except:
