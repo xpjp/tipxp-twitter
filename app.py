@@ -97,29 +97,36 @@ class Twitter():
         print("Detecting...")
         m = tweet["text"].split()
         logger.debug(m)
-        if m[0] == "@tip_XPchan":
-            command = m[1]
+        idx = 0
+        commands = ["tip", "deposit", "balance",
+                    "withdraw", "withdrawall", "donate"]
+        if m[idx] == "@tip_XPchan":
+            command = m[idx + 1]
+            if command not in commands:
+                if m[idx + 2] == "@tip_XPchan":
+                    command = m[idx + 3]
+                    idx += 2
             lang = tweet["user"]["lang"]
             address_name = "tipxpchan-" + tweet["user"]["id_str"]
 
             if command == "tip":
                 print("tip in")
-                amount = m[3]
-                if m[2][0] == "@":
-                    to_name = "tipxpchan-" + self.get_id(m[2][1:])
+                amount = m[idx + 3]
+                if m[idx + 2][0] == "@":
+                    to_name = "tipxpchan-" + self.get_id(m[idx + 2][1:])
                     balance = self.xpd.show_balance(address_name)
                     amount = float(amount)
                     if balance >= amount:
                         if self.xpd.move_balance(address_name, to_name, amount):
                             if lang == "ja":
                                 text = "XPちゃんより%sさんにお届けものだよっ！ %fXP\n『@￰tip_XPchan balance』で残高確認が行えるよ！" % (
-                                    m[2], amount)
+                                    m[idx + 2], amount)
                             else:
                                 text = "Present for %s! Sent %fXP!" % (
-                                    m[2], amount)
+                                    m[idx + 2], amount)
                             try:
                                 self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (
-                                    tweet["user"]["screen_name"], m[2][1:], amount))
+                                    tweet["user"]["screen_name"], m[idx + 2][1:], amount))
                                 self.conn.commit()
                                 req = self.reply(text, tweet["id"])
                             except:
@@ -137,7 +144,7 @@ class Twitter():
 
             elif command == "donate":
                 print("donate in")
-                amount = m[2]
+                amount = m[idx + 2]
                 to_name = "tipxpchan-940589020509192193"
                 balance = self.xpd.show_balance(address_name)
                 amount = float(amount)
@@ -167,10 +174,10 @@ class Twitter():
 
             elif command == "withdraw":
                 print("withdraw in")
-                amount = m[3]
+                amount = m[idx + 3]
                 balance = self.xpd.show_balance(address_name)
                 amount = float(amount)
-                address = m[2]
+                address = m[idx + 2]
                 if balance >= amount + self.xpd.tax:
                     if self.xpd.validateaddress(address):
                         txid = self.xpd.send_from(
@@ -203,7 +210,7 @@ class Twitter():
                 print("withdrawall in")
                 balance = self.xpd.show_balance(address_name)
                 amount = float(balance) - self.xpd.tax
-                address = m[2]
+                address = m[idx + 2]
                 if self.xpd.validateaddress(address):
                     txid = self.xpd.send_from(
                         address_name, address, amount)
@@ -273,7 +280,7 @@ def job():
         try:
             twitter.detect(twitter.tweets.pop(0))
             # print(twitter.tweets)
-            time.sleep(10)
+            time.sleep(30)
         except:
             time.sleep(1)
             # print(traceback.format_exc())
