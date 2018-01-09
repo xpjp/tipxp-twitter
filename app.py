@@ -102,7 +102,10 @@ class Twitter():
                     "withdraw", "withdrawall", "donate"]
         if m[idx] == "@tip_XPchan":
             command = m[idx + 1]
-            if command not in commands:
+            if command == "@tip_XPchan":
+                command = m[idx + 2]
+                idx += 1
+            elif command not in commands:
                 if m[idx + 2] == "@tip_XPchan":
                     command = m[idx + 3]
                     idx += 2
