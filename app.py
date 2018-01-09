@@ -8,6 +8,14 @@ import time
 import mysql.connector
 import traceback
 
+from logging import getLogger, StreamHandler, DEBUG
+logger = getLogger(__name__)
+handler = StreamHandler()
+handler.setLevel(DEBUG)
+logger.setLevel(DEBUG)
+logger.addHandler(handler)
+logger.propagate = False
+
 
 class XP_RPC():
 
@@ -88,6 +96,7 @@ class Twitter():
     def detect(self, tweet):
         print("Detecting...")
         m = tweet["text"].split()
+        logger.debug(m)
         if m[0] == "@tip_XPchan":
             command = m[1]
             lang = tweet["user"]["lang"]
@@ -255,7 +264,7 @@ def collect():
             else:
                 pass
         except:
-            print("エラー")
+            # print("エラー")
             pass
 
 
