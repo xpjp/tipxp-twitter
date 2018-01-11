@@ -128,8 +128,12 @@ class Twitter():
                                 text = "Present for %s! Sent %fXP!" % (
                                     m[idx + 2], amount)
                             try:
-                                self.cur.execute("insert into tip_history (tipfrom, tipto, amount) values (%s, %s, %s)", (
-                                    tweet["user"]["screen_name"], m[idx + 2][1:], amount))
+                                if "#XPちゃんねる" in m:
+                                    service = "xpchannnel"
+                                elif "#XPのべる" in m:
+                                    service = "xpnovel"
+                                self.cur.execute("insert into tip_history (tipfrom, tipto, amount, service) values (%s, %s, %s, %s)", (
+                                    tweet["user"]["screen_name"], m[idx + 2][1:], amount, service))
                                 self.conn.commit()
                                 req = self.reply(text, tweet["id"])
                             except:
