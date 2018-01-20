@@ -7,6 +7,7 @@ import threading
 import time
 import mysql.connector
 import traceback
+import re
 
 from logging import getLogger, StreamHandler, DEBUG
 logger = getLogger(__name__)
@@ -25,7 +26,6 @@ class XP_RPC():
         self.tax = 1.0
 
     def get_address(self, name):
-        # commands = [["getaddressesbyaccount", name]]
         address = self.connection.getaddressesbyaccount(name)
         if address:
             address = address[0]
@@ -95,45 +95,39 @@ class Twitter():
 
     def detect(self, tweet):
         print("Detecting...")
-        m = tweet["text"].split()
-        logger.debug(m)
-        idx = 0
-        commands = ["tip", "deposit", "balance",
-                    "withdraw", "withdrawall", "donate"]
-        if m[idx] == "@tip_XPchan":
-            command = m[idx + 1]
-            if command == "@tip_XPchan":
-                command = m[idx + 2]
-                idx += 1
-            elif command not in commands:
-                if m[idx + 2] == "@tip_XPchan":
-                    command = m[idx + 3]
-                    idx += 2
+        pattern = r"@tip_XPchan\s((?:d(?:eposit|onate)|withdraw(?:all)?|balance|tip))\s?(.*)"
+        m = re.search(pattern, tweet["text"])
+        if m:
+            logger.debug(m.group(0))
+            command = m.group(1)
             lang = tweet["user"]["lang"]
             address_name = "tipxpchan-" + tweet["user"]["id_str"]
 
             if command == "tip":
                 print("tip in")
-                amount = m[idx + 3]
-                if m[idx + 2][0] == "@":
-                    to_name = "tipxpchan-" + self.get_id(m[idx + 2][1:])
+                pattern = r"(@.*)\s([0-9]+\.?[0-9]*)\s?(.*)"
+                m = re.search(pattern, m.group(2))
+                if m:
+                    amount = m.group(2)
+                    to_name, lang = self.get_id(m.group(1)[1:])
+                    to_name = "tipxpchan-" + to_name
                     balance = self.xpd.show_balance(address_name)
                     amount = float(amount)
                     if balance >= amount:
                         if self.xpd.move_balance(address_name, to_name, amount):
                             if lang == "ja":
                                 text = "XPちゃんより%sさんにお届けものだよっ！ %fXP\n『@￰tip_XPchan balance』で残高確認が行えるよ！" % (
-                                    m[idx + 2], amount)
+                                    m.group(1), amount)
                             else:
                                 text = "Present for %s! Sent %fXP!" % (
-                                    m[idx + 2], amount)
+                                    m.group(1), amount)
                             try:
-                                if "#XPちゃんねる" in m:
+                                if "#XPちゃんねる" in m.group(3):
                                     service = "xpchannnel"
-                                elif "#XPのべる" in m:
+                                elif "#XPのべる" in m.group(3):
                                     service = "xpnovel"
                                 self.cur.execute("insert into tip_history (tipfrom, tipto, amount, service) values (%s, %s, %s, %s)", (
-                                    tweet["user"]["screen_name"], m[idx + 2][1:], amount, service))
+                                    tweet["user"]["screen_name"], m.group(1)[1:], amount, service))
                                 self.conn.commit()
                                 req = self.reply(text, tweet["id"])
                             except:
@@ -147,27 +141,30 @@ class Twitter():
                             text = "Not enough balance! XP:%f" % balance
                         req = self.reply(text, tweet["id"])
                 else:
-                    print("エラーだよっ！よく確認してね！")
+                    print("構文エラー")
 
             elif command == "donate":
                 print("donate in")
-                amount = m[idx + 2]
-                to_name = "tipxpchan-940589020509192193"
-                balance = self.xpd.show_balance(address_name)
-                amount = float(amount)
-                if balance >= amount:
-                    if self.xpd.move_balance(address_name, to_name, amount):
-                        if lang == "ja":
-                            text = "@%s 開発へのご支援ありがとうございます！" % tweet["user"]["name"]
-                        else:
-                            text = "@%s Thank you for donation！" % tweet["user"]["name"]
-                        req = self.reply(text, tweet["id"])
-                else:
-                    if lang == "ja":
-                        text = "残高が足りないよ〜 所持XP:%f" % balance
+                pattern = r"([0-9]+\.?[0-9]*)\s?.*"
+                m = re.search(pattern, m.group(2))
+                if m:
+                    amount = m.group(1)
+                    to_name = "tipxpchan-940589020509192193"
+                    balance = self.xpd.show_balance(address_name)
+                    amount = float(amount)
+                    if balance >= amount:
+                        if self.xpd.move_balance(address_name, to_name, amount):
+                            if lang == "ja":
+                                text = "@%s 開発へのご支援ありがとうございます！" % tweet["user"]["name"]
+                            else:
+                                text = "@%s Thank you for donation！" % tweet["user"]["name"]
+                            req = self.reply(text, tweet["id"])
                     else:
-                        text = "Not enough balance! XP:%f" % balance
-                    req = self.reply(text, tweet["id"])
+                        if lang == "ja":
+                            text = "残高が足りないよ〜 所持XP:%f" % balance
+                        else:
+                            text = "Not enough balance! XP:%f" % balance
+                        req = self.reply(text, tweet["id"])
 
             elif command == "deposit":
                 print("deposit in")
@@ -181,11 +178,49 @@ class Twitter():
 
             elif command == "withdraw":
                 print("withdraw in")
-                amount = m[idx + 3]
-                balance = self.xpd.show_balance(address_name)
-                amount = float(amount)
-                address = m[idx + 2]
-                if balance >= amount + self.xpd.tax:
+                pattern = r"(\w*)\s?([0-9]+\.?[0-9]*)\s?.*"
+                m = re.search(pattern, m.group(2))
+                if m:
+                    amount = m.group(2)
+                    balance = self.xpd.show_balance(address_name)
+                    amount = float(amount)
+                    address = m.group(1)
+                    if balance >= amount + self.xpd.tax:
+                        if self.xpd.validateaddress(address):
+                            txid = self.xpd.send_from(
+                                address_name, address, amount)
+                            if lang == "ja":
+                                text = """
+                                「%s」に%fXPを引き出したよ!(手数料:%dXP)\nhttps://chainz.cryptoid.info/xp/tx.dws?%s.htm
+                                """ % (address, amount, self.xpd.tax, txid)
+                            else:
+                                text = """
+                                Withdraw Complete! Sent %fXP to [%s]!(Fee:%dXP)\nhttps://chainz.cryptoid.info/xp/tx.dws?%s.htm
+                                """ % (address, amount, txid)
+                            req = self.reply(text, tweet["id"])
+                        else:
+                            if lang == "ja":
+                                text = "ごめんなさい！アドレスが間違ってるみたいだよ！"
+                            else:
+                                text = "Invalid Address!"
+                            req = self.reply(text, tweet["id"])
+                    else:
+                        if lang == "ja":
+                            text = "残高が足りないよ〜 所持XP:%f\n引き出しには手数料の%dXPがかかるよ!" % (
+                                balance, self.xpd.tax)
+                        else:
+                            text = "Not enough balance! XP:%f\nPlease note that required %dXP fee when withdraw" % (
+                                balance, self.xpd.tax)
+                        req = self.reply(text, tweet["id"])
+
+            elif command == "withdrawall":
+                print("withdrawall in")
+                pattern = r"(\w*)\s?.*"
+                m = re.search(pattern, m.group(2))
+                if m:
+                    balance = self.xpd.show_balance(address_name)
+                    amount = float(balance) - self.xpd.tax
+                    address = m.group(1)
                     if self.xpd.validateaddress(address):
                         txid = self.xpd.send_from(
                             address_name, address, amount)
@@ -196,7 +231,7 @@ class Twitter():
                         else:
                             text = """
                             Withdraw Complete! Sent %fXP to [%s]!(Fee:%dXP)\nhttps://chainz.cryptoid.info/xp/tx.dws?%s.htm
-                            """ % (address, amount, txid)
+                            """ % (address, amount, self.xpd.tax, txid)
                         req = self.reply(text, tweet["id"])
                     else:
                         if lang == "ja":
@@ -204,38 +239,6 @@ class Twitter():
                         else:
                             text = "Invalid Address!"
                         req = self.reply(text, tweet["id"])
-                else:
-                    if lang == "ja":
-                        text = "残高が足りないよ〜 所持XP:%f\n引き出しには手数料の%dXPがかかるよ!" % (
-                            balance, self.xpd.tax)
-                    else:
-                        text = "Not enough balance! XP:%f\nPlease note that required %dXP fee when withdraw" % (
-                            balance, self.xpd.tax)
-                    req = self.reply(text, tweet["id"])
-
-            elif command == "withdrawall":
-                print("withdrawall in")
-                balance = self.xpd.show_balance(address_name)
-                amount = float(balance) - self.xpd.tax
-                address = m[idx + 2]
-                if self.xpd.validateaddress(address):
-                    txid = self.xpd.send_from(
-                        address_name, address, amount)
-                    if lang == "ja":
-                        text = """
-                        「%s」に%fXPを引き出したよ!(手数料:%dXP)\nhttps://chainz.cryptoid.info/xp/tx.dws?%s.htm
-                        """ % (address, amount, self.xpd.tax, txid)
-                    else:
-                        text = """
-                        Withdraw Complete! Sent %fXP to [%s]!(Fee:%dXP)\nhttps://chainz.cryptoid.info/xp/tx.dws?%s.htm
-                        """ % (address, amount, self.xpd.tax, txid)
-                    req = self.reply(text, tweet["id"])
-                else:
-                    if lang == "ja":
-                        text = "ごめんなさい！アドレスが間違ってるみたいだよ！"
-                    else:
-                        text = "Invalid Address!"
-                    req = self.reply(text, tweet["id"])
 
             elif command == "balance":
                 print("balance in")
@@ -252,16 +255,15 @@ class Twitter():
                 # text = "エラーだよっ！よく確認してね！"
                 # req = self.reply(text, tweet["id"])
 
-        else:
-            pass
-
     def get_id(self, name):
         params = {
             "screen_name": name,
         }
-        user_id = requests.get("https://api.twitter.com/1.1/users/show.json",
-                               auth=self.auth_reply, params=params).json()["id_str"]
-        return user_id
+        res = requests.get("https://api.twitter.com/1.1/users/show.json",
+                               auth=self.auth_reply, params=params).json()
+        user_id = res["id_str"]
+        lang = res["lang"]
+        return user_id, lang
 
 
 def collect():
