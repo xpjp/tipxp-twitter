@@ -95,7 +95,9 @@ class Twitter():
 
     def detect(self, tweet):
         print("Detecting...")
-        if "RT" not in tweet["text"]:
+        pattern = r"RT\s(.*)"
+        m = re.search(pattern, tweet["text"])
+        if tweet["text"][0:2] != "RT":
             pattern = r"@tip_XPchan\s((?:d(?:eposit|onate)|withdraw(?:all)?|balance|tip))\s?(.*)"
             m = re.search(pattern, tweet["text"])
             if m:
