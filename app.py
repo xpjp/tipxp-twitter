@@ -129,6 +129,8 @@ class Twitter():
                                         service = "xpchannnel"
                                     elif "#XPのべる" in m.group(3):
                                         service = "xpnovel"
+                                    else:
+                                        service = "twitter"
                                     self.cur.execute("insert into tip_history (tipfrom, tipto, amount, service) values (%s, %s, %s, %s)", (
                                         tweet["user"]["screen_name"], m.group(1)[1:], amount, service))
                                     self.conn.commit()
