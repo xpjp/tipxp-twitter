@@ -5,9 +5,11 @@ import settings
 import json
 import threading
 import time
-import mysql.connector
+# import mysql.connector
 import traceback
 import re
+import sqlite3
+from contextlib import closing
 
 from logging import getLogger, StreamHandler, DEBUG
 logger = getLogger(__name__)
@@ -17,6 +19,8 @@ logger.setLevel(DEBUG)
 logger.addHandler(handler)
 logger.propagate = False
 
+dbname = 'xpchan.db'
+sql = "insert into tip_history (tipfrom, tipto, amount, service) values (?, ?, ?, ?)"
 
 class XP_RPC():
 
@@ -79,9 +83,11 @@ class Twitter():
         self.auth_reply = OAuth1(settings.CONSUMER_KEY_REPLY, settings.CONSUMER_SECRET_REPLY,
                                  settings.ACCESS_TOKEN_REPLY, settings.ACCESS_TOKEN_SECRET_REPLY)
         self.tweets = []
-        self.conn = mysql.connector.connect(
-            user=settings.dbuser, password=settings.dbpass, host=settings.dbhost, database=settings.dbname)
-        self.cur = self.conn.cursor()
+        # self.conn = mysql.connector.connect(
+        #     user=settings.dbuser, password=settings.dbpass, host=settings.dbhost, database=settings.dbname)
+        # self.cur = self.conn.cursor()
+        with closing(sqlite3.connect(dbname)) as self.conn:
+            self.c = self.conn.cursor()
 
     def reply(self, text, reply_token):
         params = {
@@ -131,8 +137,7 @@ class Twitter():
                                         service = "xpnovel"
                                     else:
                                         service = "twitter"
-                                    self.cur.execute("insert into tip_history (tipfrom, tipto, amount, service) values (%s, %s, %s, %s)", (
-                                        tweet["user"]["screen_name"], m.group(1)[1:], amount, service))
+                                    self.c.execute(sql, (tweet["user"]["screen_name"], m.group(1)[1:], amount, service))
                                     self.conn.commit()
                                     req = self.reply(text, tweet["id"])
                                 except:
