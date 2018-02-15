@@ -277,6 +277,7 @@ def collect():
     url = "https://stream.twitter.com/1.1/statuses/filter.json"
     # twitter = Twitter()
     # print(twitter.detect(tweet))
+
     _stream = requests.post(url, auth=twitter.auth_stream,
                             stream=True, data={"track": "@tip_XPchan"})
     for _line in _stream.iter_lines():
@@ -287,7 +288,7 @@ def collect():
             else:
                 pass
         except:
-            # print("エラー")
+            print(traceback.format_exc())
             pass
 
 
